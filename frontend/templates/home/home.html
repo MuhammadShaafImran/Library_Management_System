@@ -1,0 +1,145 @@
+{% extends 'base.html'%}
+
+{% block style%}
+    <link rel="stylesheet" href="static/home/home.css">
+    <style>
+        /* Stats Card Colors */
+        .stats-card {
+            background: white;
+            box-shadow: 0 4px 24px 0 rgba(120, 72, 232, 0.08);
+            border: 1.5px solid #a78bfa22;
+            transition: all 0.3s ease;
+        }
+        .stats-card .fa-book, .stats-card .stat-book {
+            color: #7c3aed !important;
+        }
+        .stats-card .fa-book-reader, .stats-card .stat-reading {
+            color: #f59e42 !important;
+        }
+        .stats-card .fa-handshake, .stats-card .stat-lent {
+            color: #10b981 !important;
+        }
+        .stats-card .fa-plus-circle, .stats-card .stat-new {
+            color: #ef4444 !important;
+        }
+        .stats-card .stat-book, .stats-card .stat-reading, .stats-card .stat-lent, .stats-card .stat-new {
+            font-weight: bold;
+        }
+    </style>
+{% endblock%}
+
+{% block content %}
+<main class="flex-1 p-6 bg-white">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="stats-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm">Total Books</p>
+                    <p class="text-2xl font-bold stat-book">2,847</p>
+                </div>
+                <i class="fas fa-book text-2xl"></i>
+            </div>
+        </div>
+        <div class="stats-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm">Currently Reading</p>
+                    <p class="text-2xl font-bold stat-reading">43</p>
+                </div>
+                <i class="fas fa-book-reader text-2xl"></i>
+            </div>
+        </div>
+        <div class="stats-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm">Books Lent</p>
+                    <p class="text-2xl font-bold stat-lent">127</p>
+                </div>
+                <i class="fas fa-handshake text-2xl"></i>
+            </div>
+        </div>
+        <div class="stats-card p-6 rounded-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm">New This Month</p>
+                    <p class="text-2xl font-bold stat-new">18</p>
+                </div>
+                <i class="fas fa-plus-circle text-2xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recently Added Section -->
+    <section class="mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Recently Added</h2>
+            <button class="text-purple-600 hover:text-purple-800 font-medium">View All</button>
+        </div>
+        <div class="book-grid" id="recentlyAdded">
+            <!-- Books will be populated by JavaScript -->
+        </div>
+    </section>
+
+    <!-- Alphabet Filter -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="ALL">ALL</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="A">A</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="B">B</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="C">C</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="D">D</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="E">E</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="F">F</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="G">G</button>
+        <button
+            class="alphabet-filter px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all"
+            data-letter="H">H</button>
+    </div>
+
+    <!-- All Books Section -->
+    <section>
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">All Books</h2>
+            <div class="flex items-center space-x-4">
+                <select class="px-4 py-2 rounded-lg bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700">
+                    <option>Sort by Title</option>
+                    <option>Sort by Author</option>
+                    <option>Sort by Date Added</option>
+                    <option>Sort by Rating</option>
+                </select>
+                <button
+                    class="p-2 rounded-lg bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all">
+                    <i class="fas fa-th"></i>
+                </button>
+                <button
+                    class="p-2 rounded-lg bg-white/60 backdrop-blur-sm border border-white/20 text-gray-700 hover:bg-purple-100 transition-all">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+        </div>
+        <div class="book-grid" id="allBooks">
+            <!-- Books will be populated by JavaScript -->
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/home/home.js"></script>
+{% endblock %}
