@@ -1,318 +1,163 @@
-from fastapi import FastAPI, Request, Query, status, Form
+from fastapi import FastAPI, Request, Query
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse,RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from supabase import create_client, Client
-from datetime import datetime
-from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
+from core.user import get_user_name, get_session_data
 from typing import Optional
-import os
+from services.book import get_book_by_id
+from services.category import get_category_by_id, get_books_by_category
+
+from api.books import router as book_router
+from api.borrow import router as borrow_router
+from api.category import router as cat_router
+from api.fine import router as fine_router
+from api.librarian import router as lib_router
+from api.notifications import router as noti_router
+# from api.record import router as record_router
+from api.user import router as user_router
 
 
-app = FastAPI()
+# --- App and Middleware ---
+app = FastAPI(title="Library Management API", version="1.0.0")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Set up templates and static files directory
 app.mount("/static", StaticFiles(directory="../frontend/static/"), name="static")
 templates = Jinja2Templates(directory="../frontend/templates/")
 
-load_dotenv(dotenv_path='../.env.local')
-
-# Load environment variables
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
-
-# Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+app.include_router(borrow_router)
+app.include_router(book_router)
+app.include_router(cat_router)
+app.include_router(fine_router)
+app.include_router(lib_router)
+app.include_router(noti_router)
+app.include_router(user_router)
 
 
+# --- public Endpoints ---
 @app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):
-    return templates.TemplateResponse("base.html", {"request": request})
+    context = get_user_name(request)
+    if context['name'] == "Unknown":
+        return RedirectResponse(url="/login")
+    return templates.TemplateResponse("home/home.html", context)
 
-@app.get('/register',response_class=HTMLResponse)
-def register(request:Request):
-    return templates.TemplateResponse("auth/signUp.html", {"request": request})
+@app.get('/register', response_class=HTMLResponse)
+def register(request: Request):
+    return templates.TemplateResponse("auth/register.html", {"request": request})
 
-@app.get('/login',response_class=HTMLResponse)
-def login(request:Request):
-    return templates.TemplateResponse("auth/signIn.html", {"request": request})
+@app.get('/login', response_class=HTMLResponse)
+def login(request: Request):
+    return templates.TemplateResponse("auth/login.html", {"request": request})
 
-@app.post("/addcategory")
-async def add_category(
-    category_name: str = Form(...),
-    category_description: str = Form(...)
-):
-    try:
-        if not category_name or not category_description:
-            return JSONResponse(status_code=400, content={"error": "Category name and description are required."})
-        today = datetime.now().date().isoformat()
-        # Insert into categories table
-        result = supabase.table("categories").insert({
-            "name": category_name,
-            "description": category_description,
-            "created_at": today
-        }).execute()
-        if not result.data:
-            return JSONResponse(status_code=500, content={"error": "Failed to add category."})
-        # Optionally, redirect or return success
-        return RedirectResponse(url="/add-book", status_code=302)
-    except Exception as e:
-        print("Error adding category:", str(e))
-        return JSONResponse(status_code=400, content={"error": str(e)})
+# --- User Endpoints ---
+@app.get('/managers',response_class=HTMLResponse)
+def managers(request:Request):
+    context = get_user_name(request)
+    if context['name'] == "Unknown":
+        return RedirectResponse(url="/login")
+    return templates.TemplateResponse('user/managers.html',context)
+
+@app.get('/profile', response_class=HTMLResponse)
+def profile(request:Request):
+    context = get_user_name(request)
+    if context['name'] == "Unknown":
+        return RedirectResponse(url="/login")
+    return templates.TemplateResponse("user/profile.html", context)
+
+@app.get("/mybooks", response_class=HTMLResponse)
+async def mybooks_page(request: Request):
+    context = get_user_name(request)
+    if context['name'] == "Unknown":
+        return RedirectResponse(url="/login")
+    return templates.TemplateResponse("book/mybooks.html", context)
+
+@app.get('/book/{book_id}', response_class=HTMLResponse)
+async def book_detail_page(request: Request, book_id: int):
+    context = get_user_name(request)
+    if context['name'] == "Unknown":
+        return RedirectResponse(url="/login")
     
+    book = await get_book_by_id(book_id)
+    if not book:
+        return templates.TemplateResponse("error.html", {"request": request, "message": "Book not found."})
+    context['book'] = book
+    # Fetch related books from the same category (excluding this book)
+    related_books = []
+    if book.get('category'):
+        related_books = await get_books_by_category(book['category'], exclude_id=book_id, limit=5)
+    context['related_books'] = related_books
+    return templates.TemplateResponse("book/book.html", context)
 
-# Category page route
-@app.get('/add-category', response_class=HTMLResponse)
-async def add_category_page(request: Request):
-    return templates.TemplateResponse("book/category.html", {"request": request})
+@app.get("/lending", response_class=HTMLResponse)
+async def lending_page(request: Request):
+    context = get_user_name(request)
+    return templates.TemplateResponse("book/lending.html", context)
 
-# Routes for book management
-@app.get('/add-book',response_class=HTMLResponse)
-async def add_book_page(request: Request):
-    return templates.TemplateResponse("book/add_books.html", {"request": request})
-
-@app.get('/home')
-def loadhomePage(request:Request):
-    return templates.TemplateResponse("home/home.html", {"request": request})
-
-
-# Add Book API (from form)
-@app.post("/addbook")
-async def addbook(
-    # Book base fields
-    title: str = Form(...),
-    author: str = Form(...),
-    publisher: str = Form(...),
-    published_year: int = Form(...),
-    language: str = Form(...),
-    isbn: str = Form(None),
-    cover_image: str = Form(None),
-    category: str = Form(None),
-    tags: str = Form(None),
-    storage_type: str = Form(...),
-    # Online fields
-    online_address: str = Form(None),
-    platform_name: str = Form(None),
-    access_url: str = Form(None),
-    format: str = Form(None),
-    # Offline fields
-    quantity: int = Form(0),
-    offline_address: str = Form(None),
-    shelf_no: str = Form(None),
-    room: str = Form(None),
-    # User info (for added_by)
-    added_by: str = Form(None)
-):
-    try:
-        # Validate required fields
-        print(title, " ", author, " ", publisher,  " ", published_year,  " ", language,  " ", category,  " ", storage_type)
-
-        if not all([title, author, publisher, published_year, language, category, storage_type]):
-            return JSONResponse(status_code=400, content={"error": "Missing required book fields in books"})
-        if storage_type not in ["online", "offline"]:
-            return JSONResponse(status_code=400, content={"error": "Invalid storage type."})
-
-        # Validate online/offline fields
-        if storage_type == "online":
-            if not all([online_address, platform_name, access_url, format]):
-                return JSONResponse(status_code=400, content={"error": "Missing online book details in online =."})
-        if storage_type == "offline":
-            if not all([quantity, offline_address, shelf_no, room]):
-                return JSONResponse(status_code=400, content={"error": "Missing offline book details."})
-
-
-        # Insert into books table
-        book_data = {
-            "title": title,
-            "author": author,
-            "publisher": publisher,
-            "published_year": published_year,
-            "language": language,
-            "isbn": isbn,
-            "cover_image": cover_image,
-            "category_id": 1,
-            "tags": tags,
-            "storage_type": storage_type,
-            "added_by": 6
-        }
-        book_result = supabase.table("books").insert(book_data).execute()
-        if not book_result.data or not book_result.data[0].get("id"):
-            return JSONResponse(status_code=500, content={"error": "Failed to insert book."})
-        book_id = book_result.data[0]["id"]
-
-        # Insert into online/offline table
-        if storage_type == "online":
-            online_data = {
-                "id": book_id,
-                "address": online_address,
-                "platform_name": platform_name,
-                "access_url": access_url,
-                "format": format
-            }
-            supabase.table("book_online").insert(online_data).execute()
+# --- Admin Endpoints ---
+@app.get('/add-book', response_class=HTMLResponse)
+async def add_book_page(request: Request, book_id: Optional[int] = Query(None)):
+    if verify_admin(request):
+        context = get_user_name(request)
+        if context['name'] == "Unknown":
+            return RedirectResponse(url="/login")
+        if book_id:
+            book = await get_book_by_id(book_id)
+            if book is not None:
+                context['book'] = book
+            else:
+                context['book'] = {}
         else:
-            offline_data = {
-                "id": book_id,
-                "quantity": quantity,
-                "address": offline_address,
-                "shelf_no": shelf_no,
-                "room": room
-            }
-            supabase.table("book_offline").insert(offline_data).execute()
+            context['book'] = {}
+        return templates.TemplateResponse("book/add_books.html", context)
+    return RedirectResponse(url="/")
 
-        return JSONResponse(status_code=200, content={"message": "Book added successfully."})
-    except Exception as e:
-        print("Error adding book:", str(e))
-        return JSONResponse(status_code=400, content={"error": str(e)})
-# Routes for borrowing and returning books
-@app.post("/borrow")
-def borrow_book(borrow_info: dict):
-    return {"message": "Book borrowed successfully", "borrow_info": borrow_info}
+@app.get('/add-category', response_class=HTMLResponse)
+async def add_category_page(request: Request, category_id: Optional[int] = Query(None)):
+    if verify_admin(request):
+        context = get_user_name(request)
+        if category_id:
+            category = get_category_by_id(category_id)
+            if category:
+                    context['category'] = category
+            else:
+                context['category'] = {}
+        else:
+            context['category'] = {}
+        return templates.TemplateResponse("book/category.html", context)
+    
+    return RedirectResponse(url="/")
 
-@app.post("/return")
-def return_book(return_info: dict):
-    return {"message": "Book returned successfully", "return_info": return_info}
+@app.get('/dashboard', response_class=HTMLResponse)
+def dashboard(request: Request):
+    if verify_admin(request):
+        context = get_user_name(request)
+        return templates.TemplateResponse("dashboard/dashboard.html", context)
+    return RedirectResponse(url='/')
 
+@app.get("/notifications", response_class=HTMLResponse)
+async def notifications_page(request: Request):
+    if verify_admin(request):
+        context = get_user_name(request)
+        return templates.TemplateResponse("user/notification.html", context)
+    return RedirectResponse(url='/mybooks')
 
-@app.post('/login')
-def login_user(email: str = Form(...), password: str = Form(...)):
-    # email = user.get('email')
-    # password = user.get('password')
+@app.get('/test', response_class=HTMLResponse)
+def test(request: Request):
+    return templates.TemplateResponse("/book/book.html", {"request": request})
 
-    if not email or not password:
-        return {"error": "Email and password are required"}, 400
+def verify_admin(request:Request):
+    session = get_session_data(request)
+    if session:
+        return session['type'] == "librarian"
 
-    print('Inside login_user:',email," ",password)
-    try:
-        # Verify credentials
-        user_data = supabase.table('users').select('*').eq('email', email).eq('password', password).execute()
-        if not user_data.data:
-            return {"error": "Invalid email or password"}, 401
-
-        # Update last login timestamp
-        supabase.table('users').update({"last_login": datetime.now().isoformat()}).eq('email', email).execute()
-
-        # return {"message": "Login successful", "data": user_data.data}, 200
-        
-        return RedirectResponse(url="/home", status_code=302)
-        # return templates.TemplateResponse("home/index.html", {"request": request})
-    except Exception as e:
-        return {"error": str(e)}, 400
-
-@app.post("/registerForm")
-async def register_user(
-    name: str = Form(...),
-    email: str = Form(...),
-    password: str = Form(...),
-    type: str = Form(...),
-    phone: str | None = Form(None),
-
-    # Student-specific
-    roll_no: Optional[str] = Form(None),
-    department: Optional[str] = Form(None),
-    batch: Optional[str] = Form(None),
-    semester: Optional[str] = Form(None),
-
-    # Teacher-specific
-    teacher_department: Optional[str] = Form(None),
-    designation: Optional[str] = Form(None),
-
-    # Librarian-specific
-    admin: Optional[bool] = Form(False),
-):
-    try:
-        # Basic validation
-        if not name or not email or not password:
-            return JSONResponse(status_code=400, content={"error": "Name, email, and password are required"})
-
-        # Check if email exists
-        existing_user = supabase.table('users').select('email').eq('email', email).execute()
-        if existing_user.data:
-            return JSONResponse(status_code=400, content={"error": "Email already exists"})
-
-        today = datetime.now().isoformat()
-
-        # Insert base user
-        newUser = supabase.table('users').insert({
-            "name": name,
-            "email": email,
-            "password": password,
-            "type": type,
-            "phone": phone,
-            "status": "active",
-            "last_login": today,
-            "joining_date": today
-        }).execute()
-
-        ID = newUser.data[0]['id']
-
-        if type == "student":
-            if not all([roll_no, department, batch, semester]):
-                return JSONResponse(status_code=400, content={"error": "Student info missing."})
-            supabase.table('students').insert({
-                "id": ID,
-                "rollno": roll_no,
-                "department": department,
-                "batch": batch,
-                "semester": semester
-            }).execute()
-
-        elif type == "teacher":
-            if not all([teacher_department, designation]):
-                return JSONResponse(status_code=400, content={"error": "Teacher info missing."})
-            supabase.table('teachers').insert({
-                "id": ID,
-                "department": teacher_department,
-                "designation": designation
-            }).execute()
-
-        elif type == "librarian":
-            supabase.table('librarians').insert({
-                "id": ID,
-                "admin": admin
-            }).execute()
-
-        return RedirectResponse(url="/home", status_code=302)
-
-    except Exception as e:
-        print("Error during registration:", str(e))
-        return JSONResponse(status_code=400, content={"error": str(e)})
-
-
-
-@app.get("/api/books")
-def get_books(
-    genre: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    year: Optional[int] = Query(None),
-    sort_by: Optional[str] = Query("title")
-):
-    try:
-        query = supabase.table("books").select("*")
-
-        # Apply filters
-        if genre:
-            query = query.eq("genre", genre)
-        if status:
-            query = query.eq("status", status)
-        if year:
-            query = query.eq("published_year", year)
-
-        # Fetch data
-        books = query.execute().data
-
-        # Apply sorting
-        if sort_by == "title":
-            books.sort(key=lambda x: x["title"])
-        elif sort_by == "author":
-            books.sort(key=lambda x: x["author"])
-        elif sort_by == "year":
-            books.sort(key=lambda x: x["published_year"], reverse=True)
-
-        return {"books": books}
-    except Exception as e:
-        return {"error": str(e)}, 500
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

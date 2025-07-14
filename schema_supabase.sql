@@ -13,6 +13,7 @@ CREATE TABLE users (
   email text UNIQUE NOT NULL,
   phone text UNIQUE,
   status user_status_enum NOT NULL,
+  rating float,
   last_login date,
   joining_date date NOT NULL
 );
@@ -87,7 +88,7 @@ CREATE TABLE borrow (
   user_id int REFERENCES users(id),
   book_id int REFERENCES books(id),
   request_description text,
-  current_date date NOT NULL,
+  request_date date NOT NULL,
   return_date date,
   fine numeric DEFAULT 0,
   approved_by int REFERENCES users(id),
@@ -122,3 +123,18 @@ CREATE TABLE records (
   created_by int REFERENCES users(id),
   action_details text
 );
+
+-- Notification table for borrow requests and other system notifications
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    book_id INTEGER REFERENCES books(id) ON DELETE SET NULL,
+    type VARCHAR(32) NOT NULL, -- e.g. 'borrow_request', 'info', etc.
+    message TEXT NOT NULL,
+    status VARCHAR(32) DEFAULT 'pending', -- e.g. 'pending', 'approved', 'rejected', 'read'
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for fast lookup by user and type
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);

@@ -1,3 +1,28 @@
+/* MyBooks custom styles for beautiful cards */
+.mybooks-card {
+    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 1.5px 4px rgba(0,0,0,0.03);
+    border-radius: 0.75rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+}
+.mybooks-card:hover {
+    box-shadow: 0 6px 24px rgba(0,0,0,0.13), 0 2px 8px rgba(0,0,0,0.07);
+    transform: translateY(-2px) scale(1.03);
+}
+.mybooks-card img {
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.mybooks-card .text-green-600 {
+    color: #16a34a;
+}
+.mybooks-card .text-yellow-600 {
+    color: #ca8a04;
+}
+.mybooks-card .text-red-600 {
+    color: #dc2626;
+}
 body {
     font-family: Arial, sans-serif;
     margin: 0;

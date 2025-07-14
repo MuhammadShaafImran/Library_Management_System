@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{%block style%}
+<link rel="stylesheet" href="/static/user/profile.css">
+{%endblock%}
+
+{%block content%}
+<!-- Main Content -->
+<main class="flex-1 sm:ml-0 p-4 sm:p-8 pt-12">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex flex-col lg:flex-row gap-8 items-start justify-center">
+            <!-- Profile Card -->
+            <div class="profile-card rounded-2xl p-8 w-full max-w-sm">
+                <div class="text-center">
+                    <div class="relative mb-6">
+                        <span id="profile-firstletter" class="w-24 h-24 rounded-full mx-auto flex items-center justify-center text-3xl font-bold text-white profile-image" style="display:inline-flex; background:#232946;">U</span>
+                    </div>
+
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2 capitalize" id ='profile-name'>Not Found</h2>
+                    <div class="text-gray-500 mb-2" id="profile-email" style="font-size:1rem; font-weight:500; word-break:break-all;">user@email.com</div>
+                    <p class="text-purple-700 font-semibold mb-4 capitalize" id = 'profile-role'>Student</p>
+
+                    <div class="section-divider mb-6"></div>
+
+                    <!-- All role info blocks, hidden by default -->
+                    <div id="profile-info-student" class="text-left space-y-3" style="display:none">
+                        <div class="flex justify-between"><span class="text-gray-600">Roll No:</span><span class="text-gray-800 font-medium" id="info-rollno">-</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Department:</span><span class="text-gray-800 font-medium capitalize" id="info-department-std">-</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Batch:</span><span class="text-gray-800 font-medium" id="info-batch">-</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Semester:</span><span class="text-gray-800 font-medium" id="info-semester">-</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Status:</span><span class="font-medium capitalize" id="info-status-std">-</span></div>
+                    </div>
+                    <div id="profile-info-teacher" class="text-left space-y-3" style="display:none">
+                        <div class="flex justify-between"><span class="text-gray-600">Department:</span><span class="text-gray-800 font-medium capitalize" id="info-department-tech">-</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Designation:</span><span class="text-gray-800 font-medium capitalize" id="info-designation">-</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Status:</span><span class="font-medium capitalize" id="info-status-tech">-</span></div>
+                    </div>
+                    <div id="profile-info-librarian" class="text-left space-y-3" style="display:none">
+                        <div class="flex justify-between"><span class="text-gray-600">Admin:</span><span class="text-gray-800 font-medium capitalize" id="info-admin">-</span></div>
+                        <div class="flex justify-between"><span class="text-gray-600">Status:</span><span class="font-medium capitalize" id="info-status-lib">-</span></div>
+                    </div>
+                    <div id="profile-info-guest" class="text-left space-y-3" style="display:none">
+                        <div class="flex justify-between"><span class="text-gray-600">Status:</span><span class="font-medium capitalize" id="info-status-guest">-</span></div>
+                    </div>
+
+                    <div class="section-divider my-6"></div>
+
+                    <div class="text-center">
+                        <p class="text-gray-600 text-sm mb-2">Member Since: <span id = 'profile-joined'> Nov 2023</span></p>
+                        <p class="text-gray-600 text-sm">Last Login: <span id = 'profile-last-login'> Dec 2024</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Profile Form -->
+            <div class="profile-card rounded-2xl p-8 w-full max-w-2xl">
+                <h3 class="text-2xl font-bold text-gray-800 mb-8">Edit Profile</h3>
+
+                <form class="space-y-6">
+                    <!-- User Info Section -->
+                    <div class="grid gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                            <input type="text" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Enter full name" name="name">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                                <input type="email" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Enter email address" name="email">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                <input type="text" class="form-input w-full px-4 py-3 rounded-lg outline-none" placeholder="Enter contact number" name="phone">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                <div class="relative">
+                                    <input type="password" class="form-input w-full px-4 py-3 rounded-lg outline-none pr-10" placeholder="Enter password" name="password" id="password-input" value="">
+                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 password-toggle-btn">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                                <div class="relative">
+                                    <input type="password" class="form-input w-full px-4 py-3 rounded-lg outline-none pr-10" placeholder="Confirm password" name="confirm_password" id="confirm-password-input">
+                                    <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 password-toggle-btn">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    <!-- Student Fields -->
+                    <div id="student-fields" style="display:none;" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Roll Number</label>
+                            <input type="text" class="form-input w-full px-4 py-3 rounded-lg outline-none" name="rollno">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                            <input type="text" class="form-input w-full px-4 py-3 rounded-lg outline-none" name="department">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Batch</label>
+                            <input type="number" class="form-input w-full px-4 py-3 rounded-lg outline-none" name="batch">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Semester</label>
+                            <input type="number" class="form-input w-full px-4 py-3 rounded-lg outline-none" name="semester" min="1" max="8">
+                        </div>
+                    </div>
+
+                    <!-- Teacher Fields -->
+                    <div id="teacher-fields" style="display:none;" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                            <input type="text" class="form-input w-full px-4 py-3 rounded-lg outline-none" name="department">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Designation</label>
+                            <input type="text" class="form-input w-full px-4 py-3 rounded-lg outline-none" name="designation">
+                        </div>
+                    </div>
+
+                    <!-- Librarian Fields -->
+                    <div id="librarian-fields" style="display:none;">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Admin</label>
+                            <select class="form-input w-full px-4 py-3 rounded-lg outline-none" name="admin">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Guest Fields -->
+                    <div id="guest-fields" style="display:none;">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <select class="form-input w-full px-4 py-3 rounded-lg outline-none" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">In Active</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                        <button type="submit"
+                            class="btn-primary flex-1 py-3 rounded-full text-white font-semibold transition-all duration-300">
+                            Update Info
+                        </button>
+                        <button type="button"
+                            class="flex-1 py-3 rounded-full border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-300">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+{%endblock%}
+
+{%block scripts%}
+<script src="/static/user/profile.js"></script>
+{%endblock%}

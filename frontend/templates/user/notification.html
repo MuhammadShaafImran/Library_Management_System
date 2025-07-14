@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="container mx-auto px-6 py-8">
+    <h2 class="text-2xl font-bold mb-6">Notifications</h2>
+    <div class="overflow-x-auto rounded-lg shadow">
+        <table class="min-w-full bg-white">
+            <thead>
+                <tr class="bg-gray-100 text-gray-700 text-sm">
+                    <th class="py-3 px-4 text-left">User</th>
+                    <th class="py-3 px-4 text-left">Message</th>
+                    <th class="py-3 px-4 text-left">Book</th>
+                    <th class="py-3 px-4 text-left">Date</th>
+                    <th class="py-3 px-4 text-left">Status</th>
+                    <th class="py-3 px-4 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody id="notifications-list">
+                <!-- Notifications will be rendered here as rows -->
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/user/notification.js"></script>
+{% endblock %}
