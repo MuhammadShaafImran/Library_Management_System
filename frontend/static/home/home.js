@@ -9,7 +9,7 @@ async function fetchDashboardStats() {
         document.querySelector('.stat-book').textContent = stats.total_books;
         document.querySelector('.stat-reading').textContent = stats.active_borrowers;
         document.querySelector('.stat-lent').textContent = stats.total_categories;
-        document.querySelector('.stat-new').textContent = stats.total_books_last_month;
+        document.querySelector('.stat-new').textContent = stats.total_books_this_month;
     } catch (e) {
         console.error('Dashboard stats error:', e);
     }

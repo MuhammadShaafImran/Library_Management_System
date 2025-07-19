@@ -60,7 +60,7 @@ CREATE TABLE books (
   language text NOT NULL,
   cover_image text,
   tags text,
-  storage_type storage_type_enum NOT NULL
+  storage_type storage_type_enum NOT NULL,
   added_by int REFERENCES users(id),
 );
 
