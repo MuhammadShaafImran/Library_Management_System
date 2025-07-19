@@ -29,7 +29,7 @@ class BorrowerResponse(BaseModel):
     request_date: Optional[date] = None
     return_date: Optional[date] = None
     fine: Optional[float] = None
-    approved_by: Optional[int] = None
+    approved_by: Optional[str] = None
     approved_date: Optional[date] = None
     return_condition: Optional[str] = None
     borrow_status: Optional[str] = None

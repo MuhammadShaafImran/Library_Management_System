@@ -63,8 +63,8 @@ function genreToColor(genre) {
 
 // Create book card
 function createBookCard(book) {
-    const truncatedTitle = book.title.length > 20 ? book.title.slice(0, 20) + "..." : book.title;
-    const truncatedAuthor = book.author.length > 18 ? book.author.slice(0, 18) + "..." : book.author;
+    const truncatedTitle = book.title.length > 10 ? book.title.slice(0, 10) + "..." : book.title;
+    const truncatedAuthor = book.author.length > 12 ? book.author.slice(0, 12) + "..." : book.author;
     const truncatedCategory = book.category && book.category.length > 10 ? book.category.slice(0, 10) + "..." : (book.category || "");
     if (book.cover_image) {
         return `

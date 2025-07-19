@@ -8,13 +8,13 @@ class StorageType(str, Enum):
 
 class DashboardStats(BaseModel):
     total_books: int
-    total_books_last_month: int
+    total_books_this_month: int
     active_borrowers: int
-    active_borrowers_last_month: int
+    active_borrowers_this_month: int
     total_categories: int
-    total_categories_last_month: int
+    total_categories_this_month: int
     pending_fines: float
-    pending_fines_last_month: float
+    pending_fines_this_month: float
 
 class BookCreate(BaseModel):
     title: str

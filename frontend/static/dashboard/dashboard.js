@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     await fetchBooks();
     await fetchCategories();
     await fetchBorrowers();
-    // await fetchFines();
+    await fetchFines();
 
     updateStats();
     loadBooksData();
@@ -143,28 +143,22 @@ function updateStats() {
 
     // Show additional info if available (assume backend can provide *_last_month fields)
     // Fallback to 0 if not present
-    const booksLast = dashboardStats.total_books_last_month || 0;
-    const booksNow = dashboardStats.total_books || 0;
-    const booksDiff = booksNow - booksLast;
-    document.getElementById('books-diff-info').textContent = `${booksDiff >= 0 ? '+' : ''}${booksDiff} from last month`;
+    const booksThis = dashboardStats.total_books_this_month || 0;
+    document.getElementById('books-diff-info').textContent = `${booksThis >= 0 ? '+' : '-'}${booksThis} from this month`;
 
-    const borrowersLast = dashboardStats.active_borrowers_last_month || 0;
-    const borrowersNow = dashboardStats.active_borrowers || 0;
-    const borrowersDiff = borrowersNow - borrowersLast;
-    document.getElementById('borrowers-diff-info').textContent = `${borrowersDiff >= 0 ? '+' : ''}${borrowersDiff} from last month`;
+    const borrowersThis = dashboardStats.active_borrowers_this_month || 0;
+    document.getElementById('borrowers-diff-info').textContent = `${borrowersThis >= 0 ? '+' : '-'}${borrowersThis} from this month`;
 
-    const categoriesLast = dashboardStats.total_categories_last_month || 0;
-    const categoriesNow = dashboardStats.total_categories || 0;
-    const categoriesDiff = categoriesNow - categoriesLast;
-    document.getElementById('categories-diff-info').textContent = `${categoriesDiff >= 0 ? '+' : ''}${categoriesDiff} new categories`;
+    const categoriesLast = dashboardStats.total_categories_this_month || 0;
+    document.getElementById('categories-diff-info').textContent = `${categoriesLast >= 0 ? '+' : '-'}${categoriesLast} new categories`;
 
-    const finesLast = dashboardStats.pending_fines_last_month || 0;
+    const finesLast = dashboardStats.pending_fines_this_month || 0;
     const finesNow = dashboardStats.pending_fines || 0;
     let finesDiffPercent = 0;
     if (finesLast !== 0) {
         finesDiffPercent = ((finesNow - finesLast) / Math.abs(finesLast) * 100).toFixed(1);
     }
-    document.getElementById('fines-diff-info').textContent = `${finesDiffPercent >= 0 ? '+' : ''}${finesDiffPercent}% change from last month`;
+    document.getElementById('fines-diff-info').textContent = `${finesDiffPercent >= 0 ? '+' : '-'}${finesDiffPercent}% change from last month`;
 }
 
 function loadBooksData() {
@@ -183,11 +177,11 @@ function loadBooksData() {
                 <td class="px-4 py-2 text-sm font-bold text-blue-900 text-center">${book.title}</td>
                 <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.author}</td>
                 <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.category}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.isbn || ''}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.language || ''}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.isbn || '-'}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.language || '-'}</td>
                 <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.platform_name !== null ? book.platform_name : 'N/A'}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.published_year || ''}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.publisher || ''}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.published_year || '-'}</td>
+                <td class="px-4 py-2 text-sm text-gray-700 text-center">${book.publisher || '-'}</td>
                 <td class="px-4 py-2 text-center">
                     <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">${book.quantity ?? 'N/A'}</span>
                 </td>
@@ -198,7 +192,7 @@ function loadBooksData() {
                     <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-blue-200 text-blue-800">${book.storage_type || 'N/A'}</span>
                 </td>
                 <td class="px-4 py-2 text-sm font-medium whitespace-nowrap text-center">
-                    <button class="edit-book-btn mr-3" data-book-id="${book.id}" data-category-name="${book.category || ''}" title="Edit">
+                    <button class="edit-book-btn mr-3" data-book-id="${book.id}" data-category-name="${book.category || '-'}" title="Edit">
                         <i class="fas fa-pen text-blue-500 hover:text-blue-700"></i>
                     </button>
                     <button class="delete-book-btn" data-book-id="${book.id}" data-book-title="${book.title}" title="Delete">
@@ -327,61 +321,33 @@ function loadBorrowersData() {
         row.className = 'hover:bg-gray-50 transition-colors slide-in';
         row.style.animationDelay = `${index * 0.1}s`;
         row.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-center">
+                <td class="px-4 py-2 whitespace-nowrap text-center">
                     <div class="w-14 h-14 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-sm mx-auto capitalize">${borrower.user_type[0] || 'U'}</div>
                 </td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-blue-900 text-center">${borrower.email}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${borrower.rollno ?? ''}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${bookMap[borrower.book_id] ?? borrower.book_id ?? ''}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${borrower.batch ?? ''}</td>
-                <td class="px-4 py-2 text-sm text-gray-700 text-center">${borrower.department ?? ''}</td>
-                <td class="px-4 py-2 text-center">
-                    <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-800">${borrower.books_borrowed ?? ''}</span>
+                <td class="text-sm text-gray-700 text-blue-900 text-center">${borrower.email}</td>
+                <td class="text-sm text-gray-700 text-center">${borrower.rollno ?? '-'}</td>
+                <td class="text-sm text-gray-700 text-center">${bookMap[borrower.book_id] ?? borrower.book_id ?? '-'}</td>
+                <td class="text-sm text-gray-700 text-center">${borrower.batch ?? '-'}</td>
+                <td class="text-sm text-gray-700 text-center">${borrower.department ?? '-'}</td>
+                <td class="text-center">
+                    <span class="inline-block px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">${borrower.books_borrowed ?? '-'}</span>
                 </td>
-                <td class="px-4 py-2 text-xs text-gray-700 text-center">${borrower.return_date ? formatDateMDYtoLong(borrower.return_date) : ''}</td>
-                <td class="px-4 py-2 text-center">
-                    <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${borrower.borrow_status ?? ''}</span>
+                <td class="text-xs text-gray-700 text-center">${borrower.return_date ? formatDateMDYtoLong(borrower.return_date) : '-'}</td>
+                <td class="text-center">
+                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold
+                    ${borrower.borrow_status === 'approved' ? 'bg-green-100 text-green-800' :
+                            borrower.borrow_status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                borrower.borrow_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'}">
+                    ${borrower.borrow_status ?? '-'}
+                    </span>
                 </td>
-                <td class="px-4 py-2 text-center">${borrower.reminder_sent ? '<i class=\"fas fa-check text-green-500\"></i>' : '<i class=\"fas fa-times text-red-500\"></i>'}</td>
-                <td class="px-4 py-2 text-xs text-gray-700 text-center">${borrower.approved_by ?? ''}</td>
-                <td class="px-4 py-2 text-sm font-medium whitespace-nowrap text-center">
-                    <button class="edit-borrower-btn mr-3" data-borrower-id="${borrower.id}" title="Edit">
-                        <i class="fas fa-pen text-blue-500 hover:text-blue-700"></i>
-                    </button>
-                    <button class="delete-borrower-btn" data-borrower-id="${borrower.id}" data-borrower-name="${borrower.name}" title="Delete">
-                        <i class="fas fa-trash text-red-500 hover:text-red-700"></i>
-                    </button>
-                </td>
+                <td class="text-xs text-gray-700 text-center">${borrower.approved_by ?? '-'}</td>
+                
             `;
         borrowersList.appendChild(row);
     });
 
-    // Add event listeners for edit and delete buttons
-    document.querySelectorAll('.edit-borrower-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const borrowerId = this.getAttribute('data-borrower-id');
-            window.location.href = `/profile?borrower_id=${borrowerId}`;
-        });
-    });
-    document.querySelectorAll('.delete-borrower-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const borrowerId = this.getAttribute('data-borrower-id');
-            const borrowerName = this.getAttribute('data-borrower-name');
-            if (confirm(`Are you sure you want to delete the borrower "${borrowerName}"? This action cannot be undone.`)) {
-                fetch(`/api/borrowers/${borrowerId}/delete`, { method: 'DELETE' })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast({ type: 'success', message: 'Borrower deleted successfully!' });
-                            fetchBorrowers().then(loadBorrowersData);
-                        } else {
-                            showToast({ type: 'error', message: 'Failed to delete borrower: ' + (data.error || 'Unknown error') });
-                        }
-                    })
-                    .catch(() => showToast({ type: 'error', message: 'Failed to delete borrower.' }));
-            }
-        });
-    });
 }
 
 function loadFinesData() {
@@ -389,10 +355,6 @@ function loadFinesData() {
     finesList.innerHTML = '';
 
     finesData.forEach((fine, index) => {
-        let status = 'Unpaid';
-        if (fine.paid) status = 'Paid';
-        const statusClass = status === 'Paid' ? 'status-paid' :
-            status === 'Unpaid' ? 'status-unpaid' : 'status-pending';
 
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 transition-colors slide-in';
@@ -403,11 +365,15 @@ function loadFinesData() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fine.amount.toFixed(2)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fine.reason || ''}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="status-badge ${statusClass} border rounded-full text-sm px-2 py-1">${status}</span>
+                    <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold 
+                        ${fine.paid ? 'bg-green-100 text-green-800 border border-green-300' : 
+                        'bg-yellow-100 text-yellow-800 border border-yellow-300'}">
+                        ${fine.paid ? 'Paid' : 'Unpaid'}
+                    </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button class="text-green-600 hover:text-green-900 mr-3 hover-grow mark-paid-btn" data-fine-id="${fine.id}">Mark Paid</button>
-                    <button class="text-blue-600 hover:text-blue-900 hover-grow delete-fine-btn" data-fine-id="${fine.id}" data-fine-title="${fine.book_title}">Delete</button>
+                <td class="px-6 py-4 whitespace-nowrap text-basefont-medium">
+                    <button class="text-green-600 hover:text-green-900 mr-3 hover-grow mark-paid-btn" data-fine-id="${fine.id}"><i class="fa-solid fa-check"></i></button>
+                    <button class="text-red-600 hover:text-red-900 hover-grow delete-fine-btn" data-fine-id="${fine.id}" data-fine-title="${fine.book_title}"><i class="fa-solid fa-trash"></i></button>
                 </td>
             `;
         finesList.appendChild(row);
@@ -417,40 +383,89 @@ function loadFinesData() {
     document.querySelectorAll('.mark-paid-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             const fineId = this.getAttribute('data-fine-id');
-            if (confirm('Mark this fine as paid?')) {
-                fetch(`/api/fines/${fineId}/mark-paid`, { method: 'POST' })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast({ type: 'success', message: 'Fine marked as paid!' });
-                            fetchFines().then(loadFinesData);
-                        } else {
-                            showToast({ type: 'error', message: 'Failed to mark fine as paid: ' + (data.error || 'Unknown error') });
-                        }
-                    })
-                    .catch(() => showToast({ type: 'error', message: 'Failed to mark fine as paid.' }));
-            }
+            // Show payment method modal
+            const modal = document.getElementById('payment-method-modal');
+            modal.classList.remove('hidden');
+            // Store fineId for use on confirm
+            modal.setAttribute('data-fine-id', fineId);
         });
     });
+
+    // Payment method modal logic
+    const modal = document.getElementById('payment-method-modal');
+    const form = document.getElementById('payment-method-form');
+    const cancelBtn = document.getElementById('cancel-payment-method');
+    if (form && cancelBtn) {
+        cancelBtn.addEventListener('click', function () {
+            modal.classList.add('hidden');
+        });
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const fineId = modal.getAttribute('data-fine-id');
+            const paymentMethod = document.getElementById('payment-method-select').value;
+            // Send payment method to backend
+            fetch(`/api/fines/${fineId}/pay`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payment_method: paymentMethod })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast({ type: 'success', message: 'Fine marked as paid!' });
+                        fetchFines().then(loadFinesData);
+                    } else {
+                        showToast({ type: 'error', message: 'Failed to mark fine as paid: ' + (data.error || 'Unknown error') });
+                    }
+                    modal.classList.add('hidden');
+                })
+                .catch(() => {
+                    showToast({ type: 'error', message: 'Failed to mark fine as paid.' });
+                    modal.classList.add('hidden');
+                });
+        });
+    }
+    // Delete fine modal logic
+    const deleteModal = document.getElementById('delete-fine-modal');
+    const deleteMessage = document.getElementById('delete-fine-message');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-fine');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-fine');
+    let fineIdToDelete = null;
+
     document.querySelectorAll('.delete-fine-btn').forEach(btn => {
         btn.addEventListener('click', function () {
-            const fineId = this.getAttribute('data-fine-id');
+            fineIdToDelete = this.getAttribute('data-fine-id');
             const fineTitle = this.getAttribute('data-fine-title');
-            if (confirm(`Are you sure you want to delete the fine for "${fineTitle}"? This action cannot be undone.`)) {
-                fetch(`/api/fines/${fineId}/delete`, { method: 'DELETE' })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast({ type: 'success', message: 'Fine deleted successfully!' });
-                            fetchFines().then(loadFinesData);
-                        } else {
-                            showToast({ type: 'error', message: 'Failed to delete fine: ' + (data.error || 'Unknown error') });
-                        }
-                    })
-                    .catch(() => showToast({ type: 'error', message: 'Failed to delete fine.' }));
-            }
+            deleteMessage.textContent = `Are you sure you want to delete the fine for "${fineTitle}"? This action cannot be undone.`;
+            deleteModal.classList.remove('hidden');
         });
     });
+    if (cancelDeleteBtn && confirmDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', function () {
+            deleteModal.classList.add('hidden');
+            fineIdToDelete = null;
+        });
+        confirmDeleteBtn.addEventListener('click', function () {
+            if (!fineIdToDelete) return;
+            fetch(`/api/fines/${fineIdToDelete}/delete`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast({ type: 'success', message: 'Fine deleted successfully!' });
+                        fetchFines().then(loadFinesData);
+                    } else {
+                        showToast({ type: 'error', message: 'Failed to delete fine: ' + (data.error || 'Unknown error') });
+                    }
+                    deleteModal.classList.add('hidden');
+                    fineIdToDelete = null;
+                })
+                .catch(() => {
+                    showToast({ type: 'error', message: 'Failed to delete fine.' });
+                    deleteModal.classList.add('hidden');
+                    fineIdToDelete = null;
+                });
+        });
+    }
 }
 
 // Add some interactive features

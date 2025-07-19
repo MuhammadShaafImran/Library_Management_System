@@ -1,4 +1,3 @@
-import asyncio
 from core.supabase_client import get_supabase_client
 from datetime import datetime
 

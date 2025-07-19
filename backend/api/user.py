@@ -6,6 +6,10 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from typing import Optional
 from datetime import datetime
+from api.fine import update_overdue_fines
+import asyncio
+import inspect
+import inspect
 
 
 router = APIRouter()
@@ -16,20 +20,45 @@ templates = Jinja2Templates(directory="templates")
 def login_user(email: str = Form(...), password: str = Form(...)):
     supabase = get_supabase_client()
     if not supabase:
-        return {"error": "Supabase client not found."}
+        return JSONResponse(status_code=500, content={"error": "Supabase client not found."})
 
     if not email or not password:
-        return {"error": "Email and password are required"}, 400
+        return JSONResponse(status_code=400, content={"error": "Email and password are required"})
     try:
         user_data = supabase.table('users').select('*').eq('email', email).eq('password', password).execute()
         if not user_data.data:
-            return {"error": "Invalid email or password"}, 401
+            return JSONResponse(status_code=401, content={"error": "Invalid email or password"})
+
+        user_id = user_data.data[0]['id']
+
+        # Update last login
         supabase.table('users').update({"last_login": datetime.now().isoformat()}).eq('email', email).execute()
-        redirect_response = RedirectResponse(url="/", status_code=302)
-        set_session_data(redirect_response, user_data.data[0])
-        return redirect_response
+
+        # Update overdue fines for this user
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(update_overdue_fines(user_id))
+            loop.close()
+        except Exception as fine_error:
+            print(f"Error updating fines on login: {fine_error}")
+
+        request = None
+        for frame in inspect.stack():
+            if 'request' in frame.frame.f_locals:
+                request = frame.frame.f_locals['request']
+                break
+        if request and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # AJAX request
+            response = JSONResponse({"success": True, "message": "Login successful!"})
+            set_session_data(response, user_data.data[0])
+            return response
+        else:
+            redirect_response = RedirectResponse(url="/", status_code=302)
+            set_session_data(redirect_response, user_data.data[0])
+            return redirect_response
     except Exception as e:
-        return {"error": str(e)}, 400
+        return JSONResponse(status_code=400, content={"error": str(e)})
 
 @router.post("/register")
 async def register(
@@ -68,30 +97,46 @@ async def register(
             "joining_date": today
         }).execute()
         ID = newUser.data[0]['id']
-        if type == "student":
-            if not all([roll_no, department, batch, semester]):
-                return JSONResponse(status_code=400, content={"error": "Student info missing."})
-            supabase.table('students').insert({
-                "id": ID,
-                "rollno": roll_no,
-                "department": department,
-                "batch": batch,
-                "semester": semester
-            }).execute()
-        elif type == "teacher":
-            if not all([teacher_department, designation]):
-                return JSONResponse(status_code=400, content={"error": "Teacher info missing."})
-            supabase.table('teachers').insert({
-                "id": ID,
-                "department": teacher_department,
-                "designation": designation
-            }).execute()
-        elif type == "librarian":
-            supabase.table('librarians').insert({
-                "id": ID,
-                "admin": admin
-            }).execute()
-        return RedirectResponse(url="/login", status_code=302)
+
+        try:
+            if type == "student":
+                if not all([roll_no, department, batch, semester]):
+                    raise ValueError("Student info missing.")
+                supabase.table('students').insert({
+                    "id": ID,
+                    "rollno": roll_no,
+                    "department": department,
+                    "batch": batch,
+                    "semester": semester
+                }).execute()
+            elif type == "teacher":
+                if not all([teacher_department, designation]):
+                    raise ValueError("Teacher info missing.")
+                supabase.table('teachers').insert({
+                    "id": ID,
+                    "department": teacher_department,
+                    "designation": designation
+                }).execute()
+            elif type == "librarian":
+                supabase.table('librarians').insert({
+                    "id": ID,
+                    "admin": admin
+                }).execute()
+        except Exception as role_error:
+            # Delete the user if an error occurs while inserting into role-specific tables
+            supabase.table('users').delete().eq('id', ID).execute()
+            return JSONResponse(status_code=400, content={"error": str(role_error)})
+
+        # If AJAX (fetch) request, return JSON, else redirect
+        request = None
+        for frame in inspect.stack():
+            if 'request' in frame.frame.f_locals:
+                request = frame.frame.f_locals['request']
+                break
+        if request and request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JSONResponse({"success": True, "message": "Registration successful!"})
+        else:
+            return RedirectResponse(url="/login", status_code=302)
     except Exception as e:
         print("Error during registration:", str(e))
         return JSONResponse(status_code=400, content={"error": str(e)})

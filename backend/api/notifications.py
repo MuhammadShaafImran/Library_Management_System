@@ -4,7 +4,7 @@ from core.user import get_session_data
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timedelta
 from models.borrow import FineResponse
 
 router = APIRouter()
@@ -103,16 +103,36 @@ async def approve_borrow_request(request: Request, notif_id: int = Path(...)):
         print('Borrow data:', borrow)
         
         # Approve borrow request
+        approval_date = datetime.now().date().isoformat()
         supabase.table("borrow").update({
             "status": "approved",
             "approved_by": librarian_id,
-            "approved_date": datetime.now().isoformat()
+            "approved_date": approval_date
+        }).eq("id", borrow['id']).execute()
+        
+        
+        return_date = (datetime.now().date() + timedelta(days=14)).isoformat()
+        
+        # Create fine record
+        fine_data = {
+            "borrow_id": borrow['id'],
+            "user_id": notif['user_id'],
+            "amount": 0,  # Initial amount is 0
+            "paid": False,
+            "reason": "Initial fine record - no fine yet",
+            "created_at": datetime.now().date().isoformat()
+        }
+        supabase.table("fines").insert(fine_data).execute()
+        
+        # Update borrow record with due date
+        supabase.table("borrow").update({
+            "return_date": return_date
         }).eq("id", borrow['id']).execute()
         
         # Update notification status
         supabase.table("notifications").update({"status": "approved"}).eq("id", notif_id).execute()
         
-        return JSONResponse(status_code=200, content={"success": True, "message": "Borrow request approved successfully."})
+        return JSONResponse(status_code=200, content={"success": True, "message": "Borrow request approved successfully.", "return_date": return_date})
         
     except Exception as e:
         print("Error in approve_borrow_request:", str(e))

@@ -61,13 +61,30 @@ document.addEventListener('DOMContentLoaded', function () {
         const modalBookId = document.getElementById('modal-book-id');
         const requestDescription = document.getElementById('request_description');
         const returnDate = document.getElementById('return_date');
+        const userSelect = document.getElementById('user_select');
 
+        // Fetch users for dropdown (no search)
+        async function fetchUsers() {
+            let url = '/api/users/all';
+            const res = await fetch(url);
+            const users = await res.json();
+            userSelect.innerHTML = '';
+            users.forEach(user => {
+                const opt = document.createElement('option');
+                opt.value = user.id;
+                opt.textContent = `${user.name} (${user.email})`;
+                userSelect.appendChild(opt);
+            });
+        }
+
+        // Only fetch once on modal open
         document.querySelectorAll('.request-borrow-btn').forEach(btn => {
             btn.addEventListener('click', function () {
                 const bookId = this.getAttribute('data-book-id');
                 modalBookId.value = bookId;
                 requestDescription.value = '';
                 returnDate.value = '';
+                fetchUsers();
                 borrowModal.classList.remove('hidden');
             });
         });
@@ -81,17 +98,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const bookId = modalBookId.value;
             const desc = requestDescription.value.trim();
             const date = returnDate.value;
-            if (!desc || !date) {
+            const userId = userSelect.value;
+            if (!desc || !date || !userId) {
                 alert('Please fill in all fields.');
                 return;
             }
-            fetch('/api/borrow/request', {
+            fetch('/api/borrow/admin_request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     book_id: bookId,
                     request_description: desc,
-                    return_date: date
+                    return_date: date,
+                    user_id: userId
                 })
             })
                 .then(res => res.json())

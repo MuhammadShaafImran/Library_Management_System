@@ -121,6 +121,33 @@ async def get_books(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/api/books/search")
+async def search_books(
+    query: str = Query(..., min_length=1),
+    limit: int = Query(10, ge=1, le=50)
+):
+    try:
+        if not query.strip():
+            return JSONResponse(status_code=400, content={"error": "Query parameter cannot be empty or whitespace."})
+        print(query.strip())
+
+        supabase = get_supabase_client()
+        if not supabase:
+            return JSONResponse(status_code=500, content={"error": "Supabase client not found."})
+
+        books_response = supabase.table("books").select(
+            """
+            id, title, author, cover_image, categories(name)
+            """
+        ).or_(f"title.ilike.%{query}%,author.ilike.%{query}%").limit(limit).execute()
+
+        return {
+            "books": books_response.data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/api/books/{book_id}", response_model=BookResponse)
 async def get_book(book_id: int):
     try:
@@ -231,9 +258,14 @@ async def api_mybooks(request: Request):
                 category_name = cat_resp.get('name', '')
         # Get librarian name if approved
         librarian_name = ""
-        librarian = supabase.table("users").select("name").eq("id", b['approved_by']).single().execute().data
-        if librarian:
-            librarian_name = librarian.get('name', '')
+        approved_by = b.get('approved_by')
+        if approved_by:
+            librarian = supabase.table("users").select("name")\
+                .eq("id", approved_by).single().execute().data
+            if librarian:
+                librarian_name = librarian.get('name', '')
+        else:
+            librarian_name = "Unassigned"
         # Format request date
         return_time = ""
         if b.get('return_date'):
@@ -242,8 +274,17 @@ async def api_mybooks(request: Request):
                 return_time = dt.strftime("%b %d, %Y")
             except Exception:
                 return_time = b['return_date']
-                
+
+        # Get fine amount for this borrow if present
+        fine_amount = None
+        fine_resp = supabase.table("fines").select("amount").eq("borrow_id", b.get("id")).eq("user_id",user_id).execute().data
+        if fine_resp and isinstance(fine_resp, list) and len(fine_resp) > 0:
+            first_entry = fine_resp[0]
+            if "amount" in first_entry:
+                fine_amount = first_entry["amount"]
+
         result.append({
+            "id": book.get('id'),
             "title": book.get('title'),
             "author": book.get('author'),
             "category_name": category_name,
@@ -255,6 +296,7 @@ async def api_mybooks(request: Request):
             "published_year": book.get('published_year'),
             "language": book.get('language'),
             "cover_image": book.get('cover_image'),
+            "fine_amount": fine_amount
         })
     return result
 
@@ -286,35 +328,35 @@ async def get_dashboard_stats():
             first_of_next_month = today.replace(month=today.month + 1, day=1, hour=0, minute=0, second=0, microsecond=0)
         last_of_this_month = first_of_next_month - timedelta(seconds=1)
         # Books last month
-        total_books_last_month = len([
+        total_books_this_month = len([
             b for b in books_response.data
             if b.get("created_at") and first_of_this_month <= datetime.fromisoformat(b["created_at"].replace('Z','')) <= last_of_this_month
         ])
         # Categories last month
-        total_categories_last_month = len([
+        total_categories_this_month = len([
             c for c in categories_response.data
             if c.get("created_at") and first_of_this_month <= datetime.fromisoformat(c["created_at"].replace('Z','')) <= last_of_this_month
         ])
         # Active borrowers last month
-        active_borrowers_last_month = len(set([
+        active_borrowers_this_month = len(set([
             b["user_id"] for b in active_borrowers_response.data
-            if b.get("borrowed_at") and first_of_this_month <= datetime.fromisoformat(b["borrowed_at"].replace('Z','')) <= last_of_this_month
+            if b.get("request_date") and first_of_this_month <= datetime.fromisoformat(b["request_date"].replace('Z','')) <= last_of_this_month
         ]))
         # Pending fines last month
-        pending_fines_last_month = sum([
+        pending_fines_this_month = sum([
             f["amount"] for f in pending_fines_response.data
             if f.get("created_at") and first_of_this_month <= datetime.fromisoformat(f["created_at"].replace('Z','')) <= last_of_this_month
         ])
         
         return DashboardStats(
             total_books=total_books,
-            total_books_last_month=total_books_last_month,
+            total_books_this_month=total_books_this_month,
             active_borrowers=active_borrowers,
-            active_borrowers_last_month=active_borrowers_last_month,
+            active_borrowers_this_month=active_borrowers_this_month,
             total_categories=total_categories,
-            total_categories_last_month=total_categories_last_month,
+            total_categories_this_month=total_categories_this_month,
             pending_fines=pending_fines,
-            pending_fines_last_month=pending_fines_last_month
+            pending_fines_this_month=pending_fines_this_month
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -344,6 +386,8 @@ async def search_all(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @router.get("/api/books/{book_id}/offline_address")
 async def get_offline_book_address(book_id: int):

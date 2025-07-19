@@ -31,15 +31,27 @@
                             LibraryHub</h1>
                     </div>
                 </div>
-                <!-- Center: Search bar -->
-                <div class="hidden sm:flex flex-1 justify-center">
-                    <div id="desktop-search"
-                        class="search-bar rounded-full pl-8 py-2 items-center space-x-2 flex w-[35rem] max-w-full">
-                        <i class="fas fa-search text-gray-400"></i>
-                        <input type="text" placeholder="Search books, authors, or genres..."
-                            class="bg-transparent outline-none flex-1 text-gray-700 w-full" id="searchInput">
+                <div class="hidden sm:flex flex-1 justify-center relative">
+                    <div class="relative w-[35rem] max-w-full">
+                        <!-- Search Bar -->
+                        <div id="desktop-search"
+                            class="search-bar py-2 items-center space-x-2 flex bg-white w-full z-10 relative">
+                            <i class="fas fa-search text-gray-400 pr-4"></i>
+                            <input type="text" placeholder="Search books, authors, or genres..."
+                                class="bg-transparent outline-none flex-1 text-gray-700 w-full placeholder-gray-400" id="searchInput">
+                        </div>
+
+                        <!-- Dropdown -->
+                        <div id="searchDropdown"
+                            class="search-dropdown absolute top-full left-0 mt-2 w-full bg-white overflow-y-auto max-h-96 z-40 hidden">
+                            <div class="p-2">
+                                <div class="text-xs text-gray-500 mb-2 px-2">Search Results</div>
+                                <ul id="searchResultsList" class="space-y-1"></ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <!-- Right: Notification and profile -->
                 <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
                     <a href='/notifications' class="relative p-2 rounded-full hover:bg-purple-100 transition-colors">
@@ -48,24 +60,42 @@
                             class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{notifications}}</span>
                     </a>
                     <div class="flex items-center space-x-2 relative" id="profile-dropdown-container">
-                        <button id="profile-dropdown-btn" class="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-sm capitalize font-bold text-white profile-image focus:outline-none" style="display:inline-flex; background:#232946;">
+                        <button id="profile-dropdown-btn"
+                            class="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-sm capitalize font-bold text-white profile-image focus:outline-none"
+                            style="display:inline-flex; background:#232946;">
                             {{firstletter}}
                         </button>
                         <span class="hidden sm:inline text-gray-700 font-medium">{{ name }}</span>
                         <!-- Dropdown -->
-                        <div id="profile-dropdown" class="absolute right-0 top-8 mt-2 w-44 bg-white rounded-xl shadow-lg ring-1 ring-black/10 py-2 z-50 hidden" style="min-width:160px;">
-                            <a href="/profile" class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-xl transition-all text-left" style="font-weight:500; font-size:15px;">Profile</a>
-                            <button id="signout-btn" class="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-xl transition-all" style="font-weight:500; font-size:15px;">Sign out</button>
+                        <div id="profile-dropdown"
+                            class="absolute right-0 top-8 mt-2 w-44 bg-white rounded-xl shadow-lg ring-1 ring-black/10 py-2 z-50 hidden"
+                            style="min-width:160px;">
+                            <a href="/profile"
+                                class="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-t-xl transition-all text-left"
+                                style="font-weight:500; font-size:15px;">Profile</a>
+                            <button id="signout-btn"
+                                class="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 rounded-b-xl transition-all"
+                                style="font-weight:500; font-size:15px;">Sign out</button>
                         </div>
                     </div>
                 </div>
             </div>
             <!-- Mobile search bar -->
-            <div id="mobile-search" class="flex sm:hidden px-4 pb-2">
+            <div id="mobile-search" class="flex sm:hidden px-4 pb-2 relative">
                 <div class="flex search-bar rounded-full w-full py-2 items-center space-x-2 bg-white/80">
                     <i class="fas fa-search text-gray-400"></i>
                     <input type="text" placeholder="Search books, authors, or genres..."
                         class="bg-transparent outline-none flex-1 text-gray-700 w-full" id="searchInputMobile">
+                </div>
+                <!-- Mobile Dropdown for search results -->
+                <div id="mobileSearchDropdown"
+                    class="search-dropdown absolute top-full left-4 right-4 bg-white shadow-xl rounded-lg mt-2 hidden border border-gray-200 max-h-96 overflow-y-auto z-50">
+                    <div class="p-2">
+                        <div class="text-xs text-gray-500 mb-2 px-2">Search Results</div>
+                        <ul id="mobileSearchResultsList" class="space-y-1">
+                            <!-- Search results will be dynamically added here -->
+                        </ul>
+                    </div>
                 </div>
             </div>
         </header>
@@ -149,40 +179,13 @@
 
         </div>
         <footer class="bg-white w-full">
-                <div class="py-4 border-t border-gray-200 text-center w-full">
-                    <p class="text-gray-600">&copy; 2024 Professional Library Management System. All rights reserved.
-                    </p>
-                </div>
+            <div class="py-4 border-t border-gray-200 text-center w-full">
+                <p class="text-gray-600">&copy; 2024 Professional Library Management System. All rights reserved.
+                </p>
+            </div>
         </footer>
     </div>
     <script src="/static/base/base.js"></script>
-    <script>
-    // Mac-style dropdown for profile
-    document.addEventListener('DOMContentLoaded', function () {
-        const btn = document.getElementById('profile-dropdown-btn');
-        const dropdown = document.getElementById('profile-dropdown');
-        const container = document.getElementById('profile-dropdown-container');
-        if (btn && dropdown) {
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                dropdown.classList.toggle('hidden');
-            });
-            document.addEventListener('click', function (e) {
-                if (!container.contains(e.target)) {
-                    dropdown.classList.add('hidden');
-                }
-            });
-        }
-        // Signout logic
-        const signoutBtn = document.getElementById('signout-btn');
-        if (signoutBtn) {
-            signoutBtn.addEventListener('click', function () {
-                fetch('/signout', { method: 'POST' })
-                  .then(() => { window.location.href = '/login'; });
-            });
-        }
-    });
-    </script>
     {% block scripts %}
     {% endblock %}
 </body>
