@@ -98,8 +98,10 @@ async def book_detail_page(request: Request, book_id: int):
 
 @app.get("/lending", response_class=HTMLResponse)
 async def lending_page(request: Request):
-    context = get_user_name(request)
-    return templates.TemplateResponse("book/lending.html", context)
+    if verify_admin(request):
+        context = get_user_name(request)
+        return templates.TemplateResponse("book/lending.html", context)
+    return RedirectResponse(url="/")
 
 # --- Admin Endpoints ---
 @app.get('/add-book', response_class=HTMLResponse)
